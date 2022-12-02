@@ -1,17 +1,14 @@
 pragma Spark_Mode (On);
-pragma Overflow_Mode (General =>  Eliminated, Assertions => Eliminated);
 
 with Ada.Text_IO;
 use Ada.Text_IO;
-with Ada.Command_Line;
-use Ada.Command_Line;
 
 procedure Day2 is
 
-   function Score_A (Opp : Character; Me : Character) return Integer;
-   function Score_B (Opp : Character; LDW : Character) return Integer;
+   function Score_A (Opp : Character; Me : Character) return Natural;
+   function Score_B (Opp : Character; LDW : Character) return Natural;
 
-   function Score_A (Opp : Character; Me : Character) return Integer is
+   function Score_A (Opp : Character; Me : Character) return Natural is
    begin
       case Opp is
          when 'A' =>
@@ -39,7 +36,7 @@ procedure Day2 is
       end case;
    end Score_A;
 
-   function Score_B (Opp : Character; LDW : Character) return Integer is
+   function Score_B (Opp : Character; LDW : Character) return Natural is
    begin
       case Opp is
          when 'A' =>
@@ -68,23 +65,20 @@ procedure Day2 is
    end Score_B;
 
    Data_File : File_Type;
-   A_Sum : Integer;
-   B_Sum : Integer;
+   A_Sum : Natural;
+   A_Score : Natural;
+   B_Sum : Natural;
+   B_Score : Natural;
    Opp : Character;
    Me : Character;
    Space : Character;
 begin
-   if Argument_Count /= 1 then
-      Put_Line ("No input file supplied");
-      return;
-   end if;
-
    A_Sum := 0;
    B_Sum := 0;
 
    Open (File => Data_File,
          Mode => In_File,
-         Name => Argument (1));
+         Name => "data/day2.txt");
 
    while not End_Of_File (Data_File) loop
       Get (Data_File, Opp);
@@ -92,11 +86,15 @@ begin
       Get (Data_File, Me);
       Skip_Line (Data_File);
 
-      A_Sum := A_Sum + Score_A (Opp, Me);
-      B_Sum := B_Sum + Score_B (Opp, Me);
+      A_Score := Score_A (Opp, Me);
+      if Natural'Last - A_Score > A_Sum then
+         A_Sum := A_Sum + A_Score;
+      end if;
+      B_Score := Score_B (Opp, Me);
+      if Natural'Last - B_Score > B_Sum then
+         B_Sum := B_Sum + B_Score;
+      end if;
    end loop;
-
-   Close (Data_File);
 
    Put ("Part A score is ");
    Put_Line (Integer'Image (A_Sum));
