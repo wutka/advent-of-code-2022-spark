@@ -1,0 +1,14 @@
+name = "day2"
+description = "Shiny new project"
+version = "0.0.0"
+
+authors = ["Mark Wutka"]
+maintainers = ["Mark Wutka <mark@wutka.com>"]
+maintainers-logins = ["wutka"]
+
+executables = ["day2"]
+
+[[depends-on]]  # This line was added by `alr with`
+gnatprov = "*"  # This line was added by `alr with`
+[[depends-on]]
+gnatprove = "^12.1.1"
