@@ -198,6 +198,9 @@ begin
          then
             Stack_Transfer (Stack_Range (Amount),
                From, To, Stacks_B);
+         else
+            Put_Line ("Invalid stack transfer");
+            return;
          end if;
 
       end if;
