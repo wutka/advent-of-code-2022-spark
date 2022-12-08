@@ -32,6 +32,10 @@ procedure Day8 is
 
       Distance := 0;
 
+      --  edge distance = 0
+      --  technically, the distance might be non-zero in
+      --  the desired direction, but ultimately since an edge always
+      --  has some 0 distance, the ultimate computation is 0
       if X = 1 or else X >= Width or else Y = 1 or else Y >= Height then
          Visible := True;
          Distance := 0;
@@ -65,11 +69,14 @@ procedure Day8 is
          if Grid (Next_X, Next_Y) < Grid (Start_X, Start_Y) then
             Distance := Distance + 1;
          else
+            --  The distance includes the blocking tree
             Distance := Distance + 1;
             Visible := False;
             return;
          end if;
 
+         --  If we hit an edge, there is no more distance
+         --  and we know the item is visible
          if Next_X = 1 or else Next_X >= Width or else
             Next_Y = 1 or else Next_Y >= Height
          then
@@ -154,27 +161,39 @@ begin
 
    for y in 1 .. Height loop
       for x in 1 .. Width loop
+
+         --  Find the distances in each direction
          Compute_Distance (Grid, x, y,
             Width, Height, Down, None,
             Left_Distance, Vis_Temp);
+
          Is_Visible := Vis_Temp;
+
          Compute_Distance (Grid, x, y,
             Width, Height, Up, None,
             Right_Distance, Vis_Temp);
+
          Is_Visible := Is_Visible or Vis_Temp;
+
          Compute_Distance (Grid, x, y,
             Width, Height, None, Up,
             Up_Distance, Vis_Temp);
+
          Is_Visible := Is_Visible or Vis_Temp;
+
          Compute_Distance (Grid, x, y,
             Width, Height, None, Down,
             Down_Distance, Vis_Temp);
+
          Is_Visible := Is_Visible or Vis_Temp;
 
-         if Is_Visible then
-            if Natural'Last > Num_Visible then
-               Num_Visible := Num_Visible + 1;
-            end if;
+         --  It bugs me to put the Natural'Last check here
+         --  Why can't Gnatprove see that this line can only
+         --  be executed Width * Height times?
+         if Is_Visible and then
+            Natural'Last > Num_Visible
+         then
+            Num_Visible := Num_Visible + 1;
          end if;
 
          Score := Left_Distance * Right_Distance *
