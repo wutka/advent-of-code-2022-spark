@@ -160,7 +160,12 @@ begin
    Best_Score := 0;
 
    for y in 1 .. Height loop
+      pragma Loop_Invariant (
+         Num_Visible <= (Natural (y) - 1) * Natural (Width));
       for x in 1 .. Width loop
+         pragma Loop_Invariant (
+            Num_Visible <= Natural (y - 1) * Natural (Width) +
+            Natural (x) - 1);
 
          --  Find the distances in each direction
          Compute_Distance (Grid, x, y,
@@ -190,9 +195,7 @@ begin
          --  It bugs me to put the Natural'Last check here
          --  Why can't Gnatprove see that this line can only
          --  be executed Width * Height times?
-         if Is_Visible and then
-            Natural'Last > Num_Visible
-         then
+         if Is_Visible then
             Num_Visible := Num_Visible + 1;
          end if;
 
