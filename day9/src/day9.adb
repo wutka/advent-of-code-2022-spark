@@ -68,7 +68,6 @@ begin
    Open (File => Data_File,
          Mode => In_File,
          Name => "data/day9.txt");
---         Name => "test.txt");
 
    while not End_Of_File (Data_File) loop
       Get (Data_File, Dir);
