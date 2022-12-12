@@ -13,8 +13,7 @@ procedure Day12 is
    type Grid_Val is new Character range 'a' .. 'z';
 
    type Grid_Type is array (Row_Range, Col_Range) of Grid_Val;
-
-   type Visited_Grid_Type is array (Row_Range, Col_Range) of Boolean;
+   type Grid_Distance_Type is array (Row_Range, Col_Range) of Natural;
 
    type Queue_Entry is record
       Row : Row_Range;
@@ -43,23 +42,21 @@ procedure Day12 is
       return B <= A or else (B > 'a' and then A = Grid_Val'Pred (B));
    end Adjacent;
 
-   function Shortest_Path (Start_Row : Row_Range;
-                           Start_Col : Col_Range;
-                           End_Row : Row_Range;
+   procedure Compute_Grid_Distances (End_Row : Row_Range;
                            End_Col : Col_Range;
                            Num_Rows : Row_Range;
                            Num_Cols : Col_Range;
-                           Grid : Grid_Type) return Natural
+                           Grid : Grid_Type;
+                           Distances : out Grid_Distance_Type)
    is
-      Visited_Grid : Visited_Grid_Type;
       Work_Queue : Set (10000);
       Work_Entry : Queue_Entry;
       New_Entry : Queue_Entry;
    begin
-      Visited_Grid := (others => (others => False));
+      Distances := (others => (others => Natural'Last));
 
-      Visited_Grid (Start_Row, Start_Col) := True;
-      New_Entry := (Start_Row, Start_Col, 0);
+      Distances (End_Row, End_Col) := 0;
+      New_Entry := (End_Row, End_Col, 0);
 
       if not Contains (Work_Queue, New_Entry) then
          Insert (Work_Queue, New_Entry);
@@ -69,18 +66,13 @@ procedure Day12 is
          Work_Entry := First_Element (Work_Queue);
          Delete (Work_Queue, Work_Entry);
 
-         --  If we hit the end spot, we are done
-         if Work_Entry.Row = End_Row and then Work_Entry.Col = End_Col then
-            return Work_Entry.Dist;
-         end if;
-
-         Visited_Grid (Work_Entry.Row, Work_Entry.Col) := True;
+         Distances (Work_Entry.Row, Work_Entry.Col) := Work_Entry.Dist;
 
          --  See if we can move "up" (up means higher row)
          if Work_Entry.Row > 1 and then
-            not Visited_Grid (Work_Entry.Row - 1, Work_Entry.Col) and then
-            Adjacent (Grid (Work_Entry.Row, Work_Entry.Col),
-                      Grid (Work_Entry.Row - 1, Work_Entry.Col))
+            Distances (Work_Entry.Row - 1, Work_Entry.Col) = Natural'Last
+            and then Adjacent (Grid (Work_Entry.Row - 1, Work_Entry.Col),
+                               Grid (Work_Entry.Row, Work_Entry.Col))
          then
             if Work_Entry.Dist < Natural'Last then
                New_Entry := (Work_Entry.Row - 1, Work_Entry.Col,
@@ -90,16 +82,14 @@ procedure Day12 is
                then
                   Insert (Work_Queue, New_Entry);
                end if;
-            else
-               return Natural'Last;
             end if;
          end if;
 
          --  See if we can move right
          if Work_Entry.Col > 1 and then
-            not Visited_Grid (Work_Entry.Row, Work_Entry.Col - 1) and then
-            Adjacent (Grid (Work_Entry.Row, Work_Entry.Col),
-                      Grid (Work_Entry.Row, Work_Entry.Col - 1))
+            Distances (Work_Entry.Row, Work_Entry.Col - 1) = Natural'Last
+            and then Adjacent (Grid (Work_Entry.Row, Work_Entry.Col - 1),
+                               Grid (Work_Entry.Row, Work_Entry.Col))
          then
             if Work_Entry.Dist < Natural'Last then
                New_Entry := (Work_Entry.Row, Work_Entry.Col - 1,
@@ -109,16 +99,14 @@ procedure Day12 is
                then
                   Insert (Work_Queue, New_Entry);
                end if;
-            else
-               return Natural'Last;
             end if;
          end if;
 
          --  See if we can move "down" (down means lower row)
          if Work_Entry.Row < Num_Rows and then
-            not Visited_Grid (Work_Entry.Row + 1, Work_Entry.Col) and then
-            Adjacent (Grid (Work_Entry.Row, Work_Entry.Col),
-                      Grid (Work_Entry.Row + 1, Work_Entry.Col))
+            Distances (Work_Entry.Row + 1, Work_Entry.Col) = Natural'Last
+            and then Adjacent (Grid (Work_Entry.Row + 1, Work_Entry.Col),
+                               Grid (Work_Entry.Row, Work_Entry.Col))
          then
             if Work_Entry.Dist < Natural'Last then
                New_Entry := (Work_Entry.Row + 1, Work_Entry.Col,
@@ -128,16 +116,14 @@ procedure Day12 is
                then
                   Insert (Work_Queue, New_Entry);
                end if;
-            else
-               return Natural'Last;
             end if;
          end if;
 
          --  See if we can move left
          if Work_Entry.Col < Num_Cols and then
-            not Visited_Grid (Work_Entry.Row, Work_Entry.Col + 1) and then
-            Adjacent (Grid (Work_Entry.Row, Work_Entry.Col),
-                      Grid (Work_Entry.Row, Work_Entry.Col + 1))
+            Distances (Work_Entry.Row, Work_Entry.Col + 1) = Natural'Last
+            and then Adjacent (Grid (Work_Entry.Row, Work_Entry.Col + 1),
+                               Grid (Work_Entry.Row, Work_Entry.Col))
          then
             if Work_Entry.Dist < Natural'Last then
                New_Entry := (Work_Entry.Row, Work_Entry.Col + 1,
@@ -147,14 +133,10 @@ procedure Day12 is
                then
                   Insert (Work_Queue, New_Entry);
                end if;
-            else
-               return Natural'Last;
             end if;
          end if;
       end loop;
-
-      return Natural'Last;
-   end Shortest_Path;
+   end Compute_Grid_Distances;
 
    Data_File : File_Type;
    Line : String (1 .. 100);
@@ -162,6 +144,7 @@ procedure Day12 is
    Ch : Character;
 
    Grid : Grid_Type;
+   Distances : Grid_Distance_Type;
 
    Num_Rows : Row_Range;
    Num_Cols : Col_Range;
@@ -233,8 +216,11 @@ begin
       return;
    end if;
 
-   Path_Len := Shortest_Path (Start_Row, Start_Col, End_Row, End_Col,
-                              Num_Rows, Num_Cols, Grid);
+   Compute_Grid_Distances (End_Row, End_Col, Num_Rows, Num_Cols,
+                           Grid, Distances);
+
+   Path_Len := Distances (Start_Row, Start_Col);
+
    Put_Line ("Part A length: " & Natural'Image (Path_Len));
 
    Best_B_Path := Natural'Last;
@@ -242,8 +228,7 @@ begin
    for row in 1 .. Num_Rows loop
       for col in 1 .. Num_Cols loop
          if Grid (row, col) = 'a' then
-            Path_Len := Shortest_Path (row, col, End_Row, End_Col,
-                                       Num_Rows, Num_Cols, Grid);
+            Path_Len := Distances (row, col);
             if Path_Len < Best_B_Path then
                Best_B_Path := Path_Len;
             end if;
