@@ -47,16 +47,24 @@ procedure Day12 is
                            Num_Rows : Row_Range;
                            Num_Cols : Col_Range;
                            Grid : Grid_Type;
-                           Distances : out Grid_Distance_Type)
+                           Distances : out Grid_Distance_Type;
+                           Best_Start_Row : out Row_Range;
+                           Best_Start_Col : out Col_Range)
    is
       Work_Queue : Set (10000);
       Work_Entry : Queue_Entry;
       New_Entry : Queue_Entry;
+      Shortest_Start : Natural;
    begin
       Distances := (others => (others => Natural'Last));
 
       Distances (End_Row, End_Col) := 0;
       New_Entry := (End_Row, End_Col, 0);
+
+      Shortest_Start := Natural'Last;
+
+      Best_Start_Row := 1;
+      Best_Start_Col := 1;
 
       if not Contains (Work_Queue, New_Entry) then
          Insert (Work_Queue, New_Entry);
@@ -67,6 +75,14 @@ procedure Day12 is
          Delete (Work_Queue, Work_Entry);
 
          Distances (Work_Entry.Row, Work_Entry.Col) := Work_Entry.Dist;
+
+         if Grid (Work_Entry.Row, Work_Entry.Col) = 'a' and then
+            Work_Entry.Dist < Shortest_Start
+         then
+            Best_Start_Row := Work_Entry.Row;
+            Best_Start_Col := Work_Entry.Col;
+            Shortest_Start := Work_Entry.Dist;
+         end if;
 
          --  See if we can move "up" (up means higher row)
          if Work_Entry.Row > 1 and then
@@ -152,8 +168,9 @@ procedure Day12 is
    Start_Col : Col_Range;
    End_Row : Row_Range;
    End_Col : Col_Range;
+   Best_Start_Row : Row_Range;
+   Best_Start_Col : Col_Range;
 
-   Best_B_Path : Natural;
    Path_Len : Natural;
 
 begin
@@ -217,24 +234,11 @@ begin
    end if;
 
    Compute_Grid_Distances (End_Row, End_Col, Num_Rows, Num_Cols,
-                           Grid, Distances);
+                           Grid, Distances, Best_Start_Row, Best_Start_Col);
 
    Path_Len := Distances (Start_Row, Start_Col);
-
    Put_Line ("Part A length: " & Natural'Image (Path_Len));
 
-   Best_B_Path := Natural'Last;
-
-   for row in 1 .. Num_Rows loop
-      for col in 1 .. Num_Cols loop
-         if Grid (row, col) = 'a' then
-            Path_Len := Distances (row, col);
-            if Path_Len < Best_B_Path then
-               Best_B_Path := Path_Len;
-            end if;
-         end if;
-      end loop;
-   end loop;
-
-   Put_Line ("Part B length: " & Natural'Image (Best_B_Path));
+   Path_Len := Distances (Best_Start_Row, Best_Start_Col);
+   Put_Line ("Part B length: " & Natural'Image (Path_Len));
 end Day12;
