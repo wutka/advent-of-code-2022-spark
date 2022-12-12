@@ -69,12 +69,14 @@ procedure Day12 is
          Work_Entry := First_Element (Work_Queue);
          Delete (Work_Queue, Work_Entry);
 
+         --  If we hit the end spot, we are done
          if Work_Entry.Row = End_Row and then Work_Entry.Col = End_Col then
             return Work_Entry.Dist;
          end if;
 
          Visited_Grid (Work_Entry.Row, Work_Entry.Col) := True;
 
+         --  See if we can move "up" (up means higher row)
          if Work_Entry.Row > 1 and then
             not Visited_Grid (Work_Entry.Row - 1, Work_Entry.Col) and then
             Adjacent (Grid (Work_Entry.Row, Work_Entry.Col),
@@ -93,6 +95,7 @@ procedure Day12 is
             end if;
          end if;
 
+         --  See if we can move right
          if Work_Entry.Col > 1 and then
             not Visited_Grid (Work_Entry.Row, Work_Entry.Col - 1) and then
             Adjacent (Grid (Work_Entry.Row, Work_Entry.Col),
@@ -111,6 +114,7 @@ procedure Day12 is
             end if;
          end if;
 
+         --  See if we can move "down" (down means lower row)
          if Work_Entry.Row < Num_Rows and then
             not Visited_Grid (Work_Entry.Row + 1, Work_Entry.Col) and then
             Adjacent (Grid (Work_Entry.Row, Work_Entry.Col),
@@ -129,6 +133,7 @@ procedure Day12 is
             end if;
          end if;
 
+         --  See if we can move left
          if Work_Entry.Col < Num_Cols and then
             not Visited_Grid (Work_Entry.Row, Work_Entry.Col + 1) and then
             Adjacent (Grid (Work_Entry.Row, Work_Entry.Col),
