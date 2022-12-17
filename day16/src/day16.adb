@@ -30,6 +30,7 @@ procedure Day16 is
       Valve_Num : Valve_Range := 1;
    end record;
 
+   --  Compares two Next_Values sorting by smallest distance
    function Next_Less (A, B : Next_Valve) return Boolean is
       (A.Distance < B.Distance or else
        (A.Distance = B.Distance and then A.Valve_Num < B.Valve_Num));
@@ -102,6 +103,7 @@ procedure Day16 is
       end if;
    end Parse_Valve_Name;
 
+   --  Computes the shortest path between Start and Finish
    function Shortest_Path (Start, Finish : Valve_Range;
       Valves : Valve_Array) return Natural is
       Nexts : Next_Set.Set (1000);
@@ -143,6 +145,8 @@ procedure Day16 is
       return Natural'Last;
    end Shortest_Path;
 
+   --  Computes a score by iterating through each minute and
+   --  opening valves at the appropriate minute
    function Compute_Score (Valve_Openings : Valve_Openings_Type;
       Num_Openings : Natural; Valves : Valve_Array) return Natural
    is
@@ -161,6 +165,10 @@ procedure Day16 is
 
       Curr_Opening := 1;
       for m in 1 .. Minutes_Range'Last loop
+         --  Since an opened valve's flow doesn't affect the
+         --  rate until the minute after it is opened, compute
+         --  the score before seeing if a valve opens in this
+         --  minute.
          if Natural'Last - Score > Flow_Rate then
             Score := Score + Flow_Rate;
          end if;
@@ -187,6 +195,7 @@ procedure Day16 is
       return Score;
    end Compute_Score;
 
+   --  Computes the score for me and the elephant
    function Compute_Dual_Score (Valve_Openings : Valve_Openings_Type;
       Num_Openings : Natural; Valve_Openings2 : Valve_Openings_Type;
       Num_Openings2 : Natural;
@@ -211,9 +220,15 @@ procedure Day16 is
       Curr_Opening := 1;
       Curr_Opening2 := 1;
       for m in 1 .. Last_Minute_B loop
+         --  Since an opened valve's flow doesn't affect the
+         --  rate until the minute after it is opened, compute
+         --  the score before seeing if a valve opens in this
+         --  minute.
          if Natural'Last - Score > Flow_Rate then
             Score := Score + Flow_Rate;
          end if;
+
+         --  See if the elephant has opened a valve
          while not All_Opened and then
             m > Valve_Openings (Curr_Opening).Minute_Opened loop
             if Natural'Last - Flow_Rate >
@@ -231,6 +246,8 @@ procedure Day16 is
                All_Opened := True;
             end if;
          end loop;
+
+         --  See if I have opened a valve
          while not All_Opened2 and then
             m > Valve_Openings2 (Curr_Opening2).Minute_Opened loop
             if Natural'Last - Flow_Rate >
@@ -254,6 +271,7 @@ procedure Day16 is
       return Score;
    end Compute_Dual_Score;
 
+   --  Recursively try sequences of valve openings
    procedure Find_Best (From : Valve_Range; Next_Minute : Minutes_Range;
       Valve_Openings : Valve_Openings_Type; Next_Opening : Useful_Range;
       Num_Useful : Useful_Range; Useful_Valves : Useful_Array;
@@ -311,6 +329,7 @@ procedure Day16 is
       end loop;
    end Find_Best;
 
+   --  Recursively try elephant valve openings
    procedure Find_Best_Elephant (From : Valve_Range;
       Next_Minute : Minutes_Range;
       Valve_Openings : Valve_Openings_Type; Next_Opening : Useful_Range;
@@ -379,6 +398,8 @@ procedure Day16 is
       end loop;
    end Find_Best_Elephant;
 
+   --  Recursively try valve openings for me, and at each point in the
+   --  sequence, see what valves the elephant would open
    procedure Find_Best_B (From : Valve_Range; Next_Minute : Minutes_Range;
       Valve_Openings : Valve_Openings_Type; Next_Opening : Useful_Range;
       Num_Useful : Useful_Range; Useful_Valves : Useful_Array;
