@@ -70,7 +70,7 @@ procedure Day17 is
       return True;
    end Can_Move;
 
-   procedure Move (Shape : Shape_Type; X : Row_Range; Y : Col_Range;
+   procedure Place (Shape : Shape_Type; X : Row_Range; Y : Col_Range;
       Columns : in out Col_Type; Highest : in out Col_Range)
       with
          Pre => Y < Col_Range'Last - 3 and then Can_Move (Shape, X, Y, Columns)
@@ -79,68 +79,18 @@ procedure Day17 is
       for i in 1 .. Shape.Num_Coords loop
          if Natural (Row_Range'Last - X) >= Natural (Shape.Coords (i).X) then
             Columns (Y + Shape.Coords (i).Y)(X + Shape.Coords (i).X) := True;
-            if Natural (Col_Range'Last - Y) >= Natural (Shape.Coords (i).Y) and then
-               Y + Shape.Coords (i).Y >= Highest
+            if Y + Shape.Coords (i).Y >= Highest
             then
-               Highest := (Y + Shape.Coords (i).Y) + Col_Range (1);
+               if Natural (Col_Range'Last - Y) >= Natural (Shape.Coords (i).Y) then
+                  Highest := Y + Shape.Coords (i).Y;
+                  if Col_Range'Last > Highest then
+                     Highest := Highest + Col_Range (1);
+                  end if;
+               end if;
             end if;
          end if;
       end loop;
-   end Move;
-
-   procedure Print_Columns (Shape : Shape_Type; Shape_X : Row_Range;
-      Shape_Y : Col_Range; Columns : Col_Type; Highest : Col_Range)
-   is
-      Printed_Shape : Boolean;
-   begin
-      if Col_Range'Last - Highest > 6 then
-         for y in reverse 1 .. Highest + Col_Range (6) loop
-            Put ("|");
-            for x in Row_Range loop
-               Printed_Shape := False;
-               for sc in 1 .. Shape.Num_Coords loop
-                  if Shape_X + Shape.Coords (sc).X = x and then
-                     Shape_Y + Shape.Coords (sc).Y = y
-                  then
-                     Put ('@');
-                     Printed_Shape := True;
-                     exit;
-                  end if;
-               end loop;
-               if not Printed_Shape then
-                  if Columns (y)(x) then
-                     Put ("#");
-                  else
-                     Put ('.');
-                  end if;
-               end if;
-            end loop;
-            Put_Line ("|");
-         end loop;
-         Put_Line ("+-------+");
-         New_Line;
-      end if;
-   end Print_Columns;
-
-   procedure Print_Only_Columns (Columns : Col_Type; Highest : Col_Range)
-   is
-   begin
-      if Col_Range'Last - Highest > 6 then
-         for y in reverse 1 .. Highest + Col_Range (6) loop
-            Put ("|");
-            for x in Row_Range loop
-               if Columns (y)(x) then
-                  Put ("#");
-               else
-                  Put ('.');
-               end if;
-            end loop;
-            Put_Line ("|");
-         end loop;
-         Put_Line ("+-------+");
-         New_Line;
-      end if;
-   end Print_Only_Columns;
+   end Place;
 
    procedure Compute_Depth (Highest : Col_Range; Columns : Col_Type;
       Depth : out Depth_Type) is
@@ -212,7 +162,6 @@ procedure Day17 is
       Reduce_Amount := 0;
       for Y in reverse 1 .. Highest loop
          Min_Y := Y;
-         Success := False;
          Blocking (Y, 1, Highest, Columns, Success, Min_Y);
          if Success then
             Reduce_Amount := Natural (Min_Y);
@@ -252,11 +201,11 @@ procedure Day17 is
    Num_Depths : Depth_Range;
    Depths : Depth_Array;
    Heights : Height_Array;
+   Height_Diff : Natural;
    Long_Height : Long_Integer;
    Long_Rocks : Long_Integer;
    Long_Num_Cycles : Long_Integer;
    Rocks_To_Repeat : Long_Integer;
-   Done : Boolean;
    Rock : Natural;
    Got_A : Boolean;
    Got_B : Boolean;
@@ -289,6 +238,11 @@ begin
    Next_Shape := 1;
    Jets_Pos := 1;
 
+   if Jets_Len = 0 then
+      Put_Line ("No jets in file");
+      return;
+   end if;
+
    if Natural'Last / Jets_Len > 5 then
       Cycle := Jets_Len * 5;
    else
@@ -305,22 +259,24 @@ begin
 
    Found_Cycle := False;
 
-   Done := False;
-
    Rock := 0;
    Long_Rocks := 0;
+   Long_Height := 0;
+   Total_Height_At_Cycle := 0;
 
    Num_Depths := 1;
 
    Got_A := False;
    Got_B := False;
 
-   while not Done loop
+   loop
       pragma Loop_Invariant (Jets_Pos >= 1 and then Jets_Pos <= Jets_Len);
 
       if Rock = 0 then
          Compute_Depth (Highest, Columns, Depths (1));
-         Heights (1) := Total_Reduced + Natural (Highest);
+         if Natural'Last - Total_Reduced > Natural (Highest) then
+            Heights (1) := Total_Reduced + Natural (Highest);
+         end if;
       elsif not Found_Cycle and then Rock mod Cycle = 0 then
          if Num_Depths < Depth_Range'Last then
             Num_Depths := Num_Depths + 1;
@@ -331,32 +287,50 @@ begin
                Heights (2 .. Depth_Range'Last);
          end if;
          Compute_Depth (Highest, Columns, Depths (Num_Depths));
-         Heights (Num_Depths) := Total_Reduced + Natural (Highest);
+         if Natural'Last - Total_Reduced > Natural (Highest) then
+            Heights (Num_Depths) := Total_Reduced + Natural (Highest);
+         end if;
 
          if Num_Depths > 400 then
             for i in 1 .. Num_Depths - 1 loop
                if Depths (Num_Depths) = Depths (i) then
                   Found_Cycle := True;
-                  Put_Line ("Depth diff = " & Depth_Range'Image (Num_Depths - i));
-                  Rocks_To_Repeat := Long_Integer (Cycle) * Long_Integer (Num_Depths - i);
+                  if Cycle > 0 and then
+                     Long_Integer'Last / Long_Integer (Cycle) > 
+                     Long_Integer (Num_Depths - i)
+                  then
+                     Rocks_To_Repeat := Long_Integer (Cycle) *
+                        Long_Integer (Num_Depths - i);
+                  else
+                     Rocks_To_Repeat := 1;
+                  end if;
                   Long_Num_Cycles := (Long_Num_Rocks - Long_Integer (Rock)) /
                      Rocks_To_Repeat - 1;
                   Long_Rocks := Long_Integer (Rock) + Rocks_To_Repeat *
                      Long_Num_Cycles;
-   --               Long_Height := Long_Integer (Total_Reduced + Natural (Highest)) +
-                  Long_Height := Long_Integer (Heights (Num_Depths) - Heights (i)) *
-                     Long_Num_Cycles + Long_Integer (Heights (Num_Depths));
+                  Height_Diff := 0;
+                  if Heights (Num_Depths) > Heights (i) then
+                     Height_Diff := Natural (Heights (Num_Depths)) -
+                        Natural (Heights (i));
+                  end if;
+                  if Long_Num_Cycles > 0 and then
+                     Long_Integer'Last / Long_Num_Cycles >
+                     Long_Integer (Height_Diff)
+                  then
+                     Long_Height := Long_Integer (Height_Diff) *
+                        Long_Num_Cycles;
+                     if Long_Integer'Last - Long_Height >
+                        Long_Integer (Heights (Num_Depths))
+                     then
+                        Long_Height := Long_Height + Long_Integer (Heights (Num_Depths));
+                     end if;
+                  else
+                     Long_Height := 0;
+                  end if;
                   Total_Height_At_Cycle := Heights (Num_Depths);
 
-                  Put_Line ("Long_Rocks = " & Long_Integer'Image (Long_Rocks));
-                  Put_Line ("Long_Height = " & Long_Integer'Image (Long_Height));
-                  Put_Line ("Total_Reduced = " & Natural'Image (Total_Reduced));
-                  Put_Line ("Highest = " & Col_Range'Image (Highest));
                   if Long_Rocks = Long_Num_Rocks then
                      Got_B := True;
-                     if Got_A then
-                        exit;
-                     end if;
                   end if;
                   exit;
                end if;
@@ -367,7 +341,9 @@ begin
          end if;
       elsif Found_Cycle and then not Got_B
       then
-         Long_Rocks := Long_Rocks + 1;
+         if Long_Integer'Last > Long_Rocks then
+            Long_Rocks := Long_Rocks + 1;
+         end if;
          if Long_Rocks = Long_Num_Rocks then
             Got_B := True;
             if Got_A then
@@ -376,7 +352,9 @@ begin
          end if;
       end if;
 
-      Rock := Rock + 1;
+      if Natural'Last > Rock then
+         Rock := Rock + 1;
+      end if;
 
       if Col_Range'Last - Highest <= 3 then
          Put_Line ("Not enough columns");
@@ -398,6 +376,7 @@ begin
          if Jets (Jets_Pos) = '>' then
             if Natural (Row_Range'Last) - Natural (Shape_X) >
                Natural (Shapes (Next_Shape).Max_X) and then
+               Col_Range'Last - Shape_Y > 3 and then
                Can_Move (Shapes (Next_Shape), Shape_X + Row_Range (1),
                   Shape_Y, Columns)
             then
@@ -405,6 +384,7 @@ begin
             end if;
          elsif Jets (Jets_Pos) = '<' then
             if Shape_X > 1 and then
+               Col_Range'Last - Shape_Y > 3 and then
                Can_Move (Shapes (Next_Shape), Shape_X - Row_Range (1),
                   Shape_Y, Columns)
             then
@@ -421,11 +401,16 @@ begin
 --            Columns, Highest);
 
          if Shape_Y > 1 and then
+            Col_Range'Last - Shape_Y > 4 and then
             Can_Move (Shapes (Next_Shape), Shape_X, Shape_Y - 1, Columns)
          then
             Shape_Y := Shape_Y - 1;
          else
-            Move (Shapes (Next_Shape), Shape_X, Shape_Y, Columns, Highest);
+            if Col_Range'Last - Shape_Y > 3 and then
+               Can_Move (Shapes (Next_Shape), Shape_X, Shape_Y, Columns)
+            then
+               Place (Shapes (Next_Shape), Shape_X, Shape_Y, Columns, Highest);
+            end if;
             Placed := True;
          end if;
 
@@ -440,15 +425,15 @@ begin
       Reduce (Highest, Columns, Amount_Reduced);
       if Amount_Reduced > 0 then
          if Natural'Last - Amount_Reduced > Total_Reduced then
---            Put_Line ("Reduced by " & Natural'Image (Amount_Reduced) &
---               "  Total reduced = " & Natural'Image (Total_Reduced));
             Total_Reduced := Total_Reduced + Amount_Reduced;
          end if;
       end if;
 
       if Rock = 2022 then
-         Put_Line ("Part A highest is " & Natural'Image (Total_Reduced +
-            Natural (Highest - 1)));
+         if Natural'Last - Total_Reduced > Natural (Highest - 1) then
+            Put_Line ("Part A highest is " & Natural'Image (Total_Reduced +
+               Natural (Highest - 1)));
+         end if;
          Got_A := True;
          if Got_B then
             exit;
@@ -457,9 +442,14 @@ begin
 
    end loop;
 
-   Put_Line ("Part B total = " & Long_Integer'Image (Long_Height +
-      Long_Integer (Total_Reduced + Natural (Highest) - Total_Height_At_Cycle - 1)));
-   Put_Line ("Long_Rocks = " & Long_Integer'Image (Long_Rocks));
-   Put_Line ("Total_Reduced = " & Natural'Image (Total_Reduced));
-   Put_Line ("Highest = " & Col_Range'Image (Highest));
+   if Long_Height >= 0 and then
+      Natural'Last - Total_Reduced > Natural (Highest) and then
+      Long_Integer'Last - Long_Height >
+         Long_Integer (Total_Reduced + Natural (Highest) -
+            Total_Height_At_Cycle - 1)
+   then
+      Put_Line ("Part B total = " & Long_Integer'Image (Long_Height +
+         Long_Integer (Total_Reduced + Natural (Highest) -
+            Total_Height_At_Cycle - 1)));
+   end if;
 end Day17;
