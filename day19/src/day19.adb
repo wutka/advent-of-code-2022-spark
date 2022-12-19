@@ -1,3 +1,5 @@
+pragma SPARK_Mode (On);
+
 with Ada.Text_IO;
 use Ada.Text_IO;
 with Ada.Integer_Text_IO;
@@ -46,14 +48,22 @@ procedure Day19 is
 
    procedure Update_State (Run_State : in out Run_State_Type) is
    begin
-      Run_State.Ore_Amount := Run_State.Ore_Amount +
-         Run_State.Num_Ore;
-      Run_State.Clay_Amount := Run_State.Clay_Amount +
-         Run_State.Num_Clay;
-      Run_State.Obs_Amount := Run_State.Obs_Amount +
-         Run_State.Num_Obs;
-      Run_State.Geode_Amount := Run_State.Geode_Amount +
-         Run_State.Num_Geode;
+      if Natural'Last - Run_State.Ore_Amount > Run_State.Num_Ore then
+         Run_State.Ore_Amount := Run_State.Ore_Amount +
+            Run_State.Num_Ore;
+      end if;
+      if Natural'Last - Run_State.Clay_Amount > Run_State.Num_Clay then
+         Run_State.Clay_Amount := Run_State.Clay_Amount +
+            Run_State.Num_Clay;
+      end if;
+      if Natural'Last - Run_State.Obs_Amount > Run_State.Num_Obs then
+         Run_State.Obs_Amount := Run_State.Obs_Amount +
+            Run_State.Num_Obs;
+      end if;
+      if Natural'Last - Run_State.Geode_Amount > Run_State.Num_Geode then
+         Run_State.Geode_Amount := Run_State.Geode_Amount +
+            Run_State.Num_Geode;
+      end if;
    end Update_State;
 
    procedure Place_Construct_In_Plan (Construct : Construction_Type;
@@ -65,11 +75,14 @@ procedure Day19 is
       case Construct is
          when None => return;
          when Ore =>
-            if Run_State.Ore_Amount >= Costs.Ore_Cost then
+            if Run_State.Ore_Amount >= Costs.Ore_Cost
+            then
                Run_State.Ore_Amount := Run_State.Ore_Amount -
                   Costs.Ore_Cost;
                Update_State (Run_State);
-               Run_State.Num_Ore := Run_State.Num_Ore + 1;
+               if Natural'Last > Run_State.Num_Ore then
+                  Run_State.Num_Ore := Run_State.Num_Ore + 1;
+               end if;
                Success := True;
             end if;
             return;
@@ -78,7 +91,9 @@ procedure Day19 is
                Run_State.Ore_Amount := Run_State.Ore_Amount -
                   Costs.Clay_Cost;
                Update_State (Run_State);
-               Run_State.Num_Clay := Run_State.Num_Clay + 1;
+               if Natural'Last > Run_State.Num_Clay then
+                  Run_State.Num_Clay := Run_State.Num_Clay + 1;
+               end if;
                Success := True;
             end if;
             return;
@@ -91,7 +106,9 @@ procedure Day19 is
                Run_State.Clay_Amount := Run_State.Clay_Amount -
                   Costs.Obs_Clay_Cost;
                Update_State (Run_State);
-               Run_State.Num_Obs := Run_State.Num_Obs + 1;
+               if Natural'Last > Run_State.Num_Obs then
+                  Run_State.Num_Obs := Run_State.Num_Obs + 1;
+               end if;
                Success := True;
             end if;
             return;
@@ -104,7 +121,9 @@ procedure Day19 is
                Run_State.Obs_Amount := Run_State.Obs_Amount -
                   Costs.Geode_Obs_Cost;
                Update_State (Run_State);
-               Run_State.Num_Geode := Run_State.Num_Geode + 1;
+               if Natural'Last > Run_State.Num_Geode then
+                  Run_State.Num_Geode := Run_State.Num_Geode + 1;
+               end if;
                Success := True;
             end if;
             return;
@@ -129,11 +148,8 @@ procedure Day19 is
       for c in Ore .. Geode loop
          New_Run_State := Run_State;
          for Minute in Start_Minute .. Max_Minutes loop
-            Success := False;
             Place_Construct_In_Plan (c, Costs, New_Run_State, Success);
             if Success then
---               Put_Line ("Placed " & Construction_Type'Image (c) &
---                  " at minute " & Minute_Range'Image (Minute));
                if Minute < Max_Minutes then
                   Try_Permutation (Costs, Max_Minutes, New_Run_State,
                      Minute + 1, Best_Num_Geodes);
@@ -144,7 +160,6 @@ procedure Day19 is
             end if;
          end loop;
 
---         Put_Line ("Num geodes at minute 24 = " & Natural'Image (New_Run_State.Geode_Amount));
          Best_Num_Geodes := Natural'Max (Best_Num_Geodes,
             New_Run_State.Geode_Amount);
       end loop;
@@ -163,7 +178,6 @@ procedure Day19 is
 begin
    Open (File => Data_File,
          Mode => In_File,
---         Name => "test.txt");
          Name => "data/day19.txt");
 
    Part_A_Sum := 0;
@@ -259,7 +273,12 @@ begin
       Put_Line ("Blueprint " & Natural'Image (Blueprint_Num) &
          " can create " & Natural'Image (Num_Geodes) & " geodes");
 
-      Part_A_Sum := Part_A_Sum + Blueprint_Num * Num_Geodes;
+      if Blueprint_Num > 0 and then
+         Natural'Last / Blueprint_Num > Num_Geodes and then
+         Natural'Last - Part_A_Sum > Blueprint_Num * Num_Geodes
+      then
+         Part_A_Sum := Part_A_Sum + Blueprint_Num * Num_Geodes;
+      end if;
 
       if Blueprint_Num < 4 then
          Run_State := (others => <>);
@@ -268,10 +287,14 @@ begin
          Try_Permutation (Costs, 32, Run_State, 1, Num_Geodes);
 
          Put_Line ("Blueprint " & Natural'Image (Blueprint_Num) &
-            " can create " & Natural'Image (Num_Geodes) & " geodes in 32 minutes");
-         Part_B_Product := Part_B_Product * Num_Geodes;
+            " can create " & Natural'Image (Num_Geodes) &
+            " geodes in 32 minutes");
+         if Num_Geodes > 0 and then
+            Natural'Last / Num_Geodes > Part_B_Product
+         then
+            Part_B_Product := Part_B_Product * Num_Geodes;
+         end if;
       end if;
-
 
    end loop;
 
