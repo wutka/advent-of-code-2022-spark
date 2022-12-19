@@ -163,8 +163,8 @@ procedure Day19 is
 begin
    Open (File => Data_File,
          Mode => In_File,
-         Name => "test.txt");
---         Name => "data/day19.txt");
+--         Name => "test.txt");
+         Name => "data/day19.txt");
 
    Part_A_Sum := 0;
    Part_B_Product := 1;
