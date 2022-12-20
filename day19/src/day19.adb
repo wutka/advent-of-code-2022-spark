@@ -28,7 +28,7 @@ procedure Day19 is
       Geode_Amount : Natural := 0;
    end record;
 
-   type Construction_Type is (None, Ore, Clay, Obs, Geode);
+   type Robot_Type is (None, Ore, Clay, Obs, Geode);
 
    type Minute_Range is range 1 .. 32;
 
@@ -66,13 +66,15 @@ procedure Day19 is
       end if;
    end Update_State;
 
-   procedure Place_Construct_In_Plan (Construct : Construction_Type;
+   --  See if this robot can go into the sequence at the current
+   --  position (if there are enough resources to start creating it)
+   procedure Place_Robot_In_Sequence (Robot : Robot_Type;
       Costs : Costs_Type; Run_State : in out Run_State_Type;
       Success : out Boolean) is
    begin
       Success := False;
 
-      case Construct is
+      case Robot is
          when None => return;
          when Ore =>
             if Run_State.Ore_Amount >= Costs.Ore_Cost
@@ -128,8 +130,11 @@ procedure Day19 is
             end if;
             return;
       end case;
-   end Place_Construct_In_Plan;
+   end Place_Robot_In_Sequence;
 
+   --  Try all possible sequences of creating robots. The length of each
+   --  sequence is limited by when each robot can be created, some sequences
+   --  such as those that start with geode or obsidian will fail immediately
    procedure Try_Permutation (Costs : Costs_Type; Max_Minutes : Minute_Range;
       Run_State : Run_State_Type; Start_Minute : Minute_Range;
       Best_Num_Geodes : in out Natural)
@@ -137,6 +142,7 @@ procedure Day19 is
       Success : Boolean;
       New_Run_State : Run_State_Type;
    begin
+      --  If this is the final minute, just update the counts
       if Start_Minute = Max_Minutes then
          New_Run_State := Run_State;
          Update_State (New_Run_State);
@@ -145,10 +151,15 @@ procedure Day19 is
          return;
       end if;
 
-      for c in Ore .. Geode loop
+      --  Try each robot type
+      for r in Ore .. Geode loop
          New_Run_State := Run_State;
          for Minute in Start_Minute .. Max_Minutes loop
-            Place_Construct_In_Plan (c, Costs, New_Run_State, Success);
+            --  See if the robot can be created at the current minute
+            Place_Robot_In_Sequence (r, Costs, New_Run_State, Success);
+
+            --  If the robot can be constructed here, then try the next
+            --  robot in the sequence
             if Success then
                if Minute < Max_Minutes then
                   Try_Permutation (Costs, Max_Minutes, New_Run_State,
